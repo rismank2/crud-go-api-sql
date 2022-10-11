@@ -1,9 +1,13 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
+	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
@@ -41,5 +45,36 @@ func main() {
 		log.Panicln("Koeneksi Berhasil")
 	}
 	//auto migrasi database
-	db.AutoMigrate(&Orders{}, &Items{})
+	db.AutoMigrate(&Orders{})
+
+}
+
+func handleRequests() {
+	log.Println("Start the development server at http://127.0.0.1:9999")
+
+	myRouter := mux.NewRouter().StrictSlash(true)
+
+	myRouter.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+
+		res := Result{Message: "Method not found"}
+		response, _ := json.Marshal(res)
+		w.Write(response)
+	})
+
+	myRouter.MethodNotAllowedHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+
+		res := Result{Message: "Method not allowed"}
+		response, _ := json.Marshal(res)
+		w.Write(response)
+	})
+
+	myRouter.HandleFunc("/", homePage)
+}
+
+func homePage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Welcome!")
 }
